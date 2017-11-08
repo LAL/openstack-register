@@ -1,5 +1,6 @@
-#!/usr/local/bin/python2.7
+"""
+Provide Backend support.
+"""
 # -*- coding: utf-8 -*-
 
-from OpenLdap import *
-from PrototypeBackend import *
+from registration.Backend.OpenLdap import OpenLdapUserBackend, OpenLdapGroupBackend

@@ -13,28 +13,30 @@ https://docs.djangoproject.com/en/1.9/ref/settings/
 """
 
 import os
-import ldap
-from utils import create_logger, create_logger_error
 import logging
-import ConfigParser
-from django_auth_ldap.config import LDAPSearch
+import ldap
+
+from django_auth_ldap.config import LDAPSearch, GroupOfUniqueNamesType
+
+from openstack_registration.config import GLOBAL_CONFIG, load_config
 
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+# We load configuration file
+load_config()
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.9/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '4k8(2g_d_05t7^^g*8&@2k3qghe7eh2ws)mfl-*^d@5=jd*3_^'
+SECRET_KEY = GLOBAL_CONFIG['DJANGO_SECRET_KEY']
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -133,37 +135,57 @@ LOGIN_URL = '/login'
 LOGOUT_URL = '/logout:'
 LOGIN_REDIRECT_URL = '/'
 STATIC_URL = '/static/'
-# MEDIA_URL = 'js/'
-GLOBAL_CONFIG = {}
-logging_mode = 'both'
-logger = create_logger(logging_mode, stream_level=logging.DEBUG)
-logger_error = create_logger_error(logging_mode, stream_level=logging.DEBUG)
 
-# GLOBAL_CONFIG['LOGGER'] = logger
+# Logging configuration. A very basic one.
 
-config = ConfigParser.RawConfigParser()
-config.read('/etc/register.cfg')
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'simple': {
+            'format': '%(levelname)s %(asctime)s: %(message)s'
+        },
+    },
+    'handlers': {
+        'django': {
+            'level': GLOBAL_CONFIG['DJANGO_LOGLEVEL'],
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(GLOBAL_CONFIG['LOG_DIR'], 'registration.log'),
+            'formatter': 'simple'
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['django'],
+            'level': GLOBAL_CONFIG['DJANGO_LOGLEVEL'],
+            'propagate': True,
+        }
+    }
+}
 
-GLOBAL_CONFIG['LDAP_SERVER'] = config.get('LDAP', 'server')
-GLOBAL_CONFIG['LDAP_USER'] = config.get('LDAP', 'bind_dn')
-GLOBAL_CONFIG['LDAP_PASSWORD'] = config.get('LDAP', 'password')
-GLOBAL_CONFIG['LDAP_BASE_OU'] = config.get('LDAP', 'user_search')
-GLOBAL_CONFIG['project'] = ''
-GLOBAL_CONFIG['admin'] = config.get('MAILING', 'admin')
-GLOBAL_CONFIG['DEBUG_LVL'] = config.get('MAIN', 'debug_lvl')
+LOGGER = logging.getLogger('django')
 
+# Authentification base on ldap
 
-AUTH_LDAP_SERVER_URI = config.get('AUTH', 'server')
-AUTH_LDAP_BIND_DN = config.get('AUTH', 'bind_dn')
-AUTH_LDAP_BIND_PASSWORD = config.get('AUTH', 'password')
-# AUTH_LDAP_USER_SEARCH = LDAPSearch(config.get('AUTH',
-#                                               'user_search'),
-#                                    ldap.SCOPE_SUBTREE,
-#                                    "(samaccountname=%(user)s)")
-AUTH_LDAP_USER_SEARCH = LDAPSearch(config.get('AUTH',
-                                              'user_search'),
-                                   ldap.SCOPE_SUBTREE,
+AUTH_LDAP_SERVER_URI = GLOBAL_CONFIG['LDAP_SERVER']
+AUTH_LDAP_BIND_DN = GLOBAL_CONFIG['LDAP_USER']
+AUTH_LDAP_BIND_PASSWORD = GLOBAL_CONFIG['LDAP_PASSWORD']
+AUTH_LDAP_USER_SEARCH = LDAPSearch(GLOBAL_CONFIG['LDAP_USER_OU'],
+                                   ldap.SCOPE_SUBTREE,  # pylint: disable=no-member
                                    "(uid=%(user)s)")
+AUTH_LDAP_GROUP_SEARCH = LDAPSearch(GLOBAL_CONFIG['LDAP_GROUP_OU'],
+                                    ldap.SCOPE_SUBTREE,  # pylint: disable=no-member
+                                    "(objectClass=groupOfUniqueNames)")
+AUTH_LDAP_USER_ATTR_MAP = {
+    'first_name': 'givenName',
+    'last_name': 'sn'
+}
+AUTH_LDAP_USER_FLAGS_BY_GROUP = {
+    "is_superuser": "cn={LDAP_ADMIN_GROUP},{LDAP_GROUP_OU}".format(**GLOBAL_CONFIG)
+}
+AUTH_LDAP_GROUP_TYPE = GroupOfUniqueNamesType()
+AUTH_LDAP_FIND_GROUP_PERMS = True
+
 AUTHENTICATION_BACKENDS = (
     'django_auth_ldap.backend.LDAPBackend',
     'django.contrib.auth.backends.ModelBackend',

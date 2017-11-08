@@ -1,0 +1,54 @@
+{% extends "core/base.html" %}
+{% load i18n %}
+{% block title %}OpenStack - User{% endblock %}
+
+{% block script %}
+<script src="/static/js/registration/users/user/get.js" type="text/javascript"></script>
+<script src="/static/js/registration/users/user/put.js" type="text/javascript"></script>
+<script src="/static/js/registration/users/user/delete.js" type="text/javascript"></script>
+{% endblock %}
+
+{% block javascript %}{% endblock %}
+
+{% block content %}
+<div class="col-sm-8">
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h3 class="panel-title">User Information (<span id="username-info"></span>)</h3>
+  </div>
+  <div class="panel-body">
+      <div class="row">
+          <div class="col-sm-6">
+              <strong>Firstname</strong>: <span id="firstname-info"></span>
+          </div>
+          <div class="col-sm-6">
+              <strong>Lastname</strong>: <span id="lastname-info"></span>
+          </div>
+      </div>
+      <br/>
+      <div class="row">
+          <div class="col-sm-12">
+              <strong>Email Adress</strong>: <span id="email-info"></span>
+          </div>
+      </div>
+      <br/>
+      <div class="row text-center">
+          <div class="col-sm-3 col-sm-offset-3">
+              <a class="btn btn-primary col-sm-12" onclick="openEditInfoModal()">
+                  <span class="glyphicon glyphicon-edit"></span>
+              </a>
+          </div>
+          <div class="col-sm-3">
+              <a class="btn btn-danger col-sm-12" onclick="openDeleteModal()">
+                  <span class="glyphicon glyphicon-trash"></span>
+              </a>
+          </div>
+      </div>
+  </div>
+</div>
+</div>
+{% include "users/user/modify.html" %}
+{% include "users/user/delete.html" %}
+
+{% endblock %}
+

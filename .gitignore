@@ -1,0 +1,7 @@
+.idea
+MANIFEST
+*.iml
+*.sqlite3*
+*.pyc
+doc/build*
+openstack_registration/registration/migrations*
